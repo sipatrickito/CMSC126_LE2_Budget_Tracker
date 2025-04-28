@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Dashboard</h1>
+    <a href="{% url 'add_entry' %}" class="btn btn-primary">Add New Entry</a>
+</div>
+
+<p>Welcome to your budget tracker! Here you'll see your financial summaries.</p>
+
+<!-- Financial Summary Section -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Total Income</h5>
+                <p class="card-text">₱{{ month_summary.total_income|floatformat:2 }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Total Expenses</h5>
+                <p class="card-text">₱{{ month_summary.total_expenses|floatformat:2 }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Remaining Balance</h5>
+                <p class="card-text">₱{{ month_summary.balance|floatformat:2 }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Category Breakdown (Pie Chart) Section -->
+<h3>Expenses by Category</h3>
+<canvas id="category-chart" style="height: 300px;"></canvas>
+
+{% if entries %}
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Title</th>
+                <th>Type</th>
+                <th>Category</th>
+                <th>Amount</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in entries %}
+                <tr>
+                    <td>{{ entry.date }}</td>
+                    <td>{{ entry.title }}</td>
+                    <td>{{ entry.get_type_display }}</td>
+                    <td>{{ entry.category.name }}</td>
+                    <td>₱{{ entry.amount|floatformat:2 }}</td>
+                    <td>
+                        <a href="{% url 'edit_entry' entry.id %}" class="btn btn-sm btn-primary">Edit</a>
+                        <a href="{% url 'delete_entry' entry.id %}" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this entry?');">Delete</a>
+                    </td>                    
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <p>No entries yet. Click "Add New Entry" to start tracking your finances!</p>
+{% endif %}
+
+{% endblock %}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    const categoryData = JSON.parse('{{ pie_chart_data|safe }}');
+
+    console.log('Category Data:', categoryData);
+
+    var ctx = document.getElementById('category-chart').getContext('2d');
+    new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: categoryData.labels,
+            datasets: [{
+                data: categoryData.data,
+                backgroundColor: ['#ff6f61', '#ffcc00', '#66b3ff', '#ff3399', '#66ff33'],
+            }]
+        }
+    });
+</script>
+
+
+
+
