@@ -37,11 +37,22 @@
     </div>
 </div>
 
-<!-- Category Breakdown (Pie Chart) Section -->
-<h3>Expenses by Category</h3>
-<canvas id="category-chart" style="height: 300px;"></canvas>
+<form method="get" class="mb-4">
+    <div class="row g-2 align-items-center">
+        <div class="col-auto">
+            <label for="month" class="form-label mb-0">Select Month:</label>
+        </div>
+        <div class="col-auto">
+            <input type="month" id="month" name="month" class="form-control" value="{{ request.GET.month|default:today|date:'Y-m' }}">
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-primary">Filter</button>
+        </div>
+    </div>
+</form>
 
 {% if entries %}
+
     <table class="table table-striped">
         <thead>
             <tr>
@@ -73,7 +84,16 @@
     <p>No entries yet. Click "Add New Entry" to start tracking your finances!</p>
 {% endif %}
 
-{% endblock %}
+<!-- Category Breakdown (Pie Chart) Section -->
+<h3>Expenses by Category</h3>
+<div class="row justify-content-center">
+    <div class="col-md-6 text-center">
+        <canvas id="category-chart" style="height: 300px; width: 100%; max-width: 500px;"></canvas>
+    </div>
+</div>
+
+<h3 class="mt-5">Monthly Income vs Expenses</h3>
+<canvas id="bar-chart" style="height: 400px;"></canvas>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -95,6 +115,42 @@
     });
 </script>
 
+<script>
+    var barLabels = [{% for month in monthly_summary %}"{{ month.month|date:'F Y' }}"{% if not forloop.last %}, {% endif %}{% endfor %}];
+    var incomeData = [{% for month in monthly_summary %}{{ month.total_income|default:0 }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+    var expensesData = [{% for month in monthly_summary %}{{ month.total_expenses|default:0 }}{% if not forloop.last %}, {% endif %}{% endfor %}];
 
+    var ctx2 = document.getElementById('bar-chart').getContext('2d');
+    new Chart(ctx2, {
+        type: 'bar',
+        data: {
+            labels: barLabels,
+            datasets: [
+                {
+                    label: 'Income',
+                    backgroundColor: '#4caf50',
+                    data: incomeData
+                },
+                {
+                    label: 'Expenses',
+                    backgroundColor: '#f44336',
+                    data: expensesData
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+</script>
+
+
+
+{% endblock %}
 
 

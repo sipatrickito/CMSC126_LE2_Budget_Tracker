@@ -6,16 +6,42 @@ from .models import Entry, Category
 from django.db.models import Sum
 from datetime import date
 import json 
+from . import models
+from django.db.models import Q
+from django.db.models.functions import TruncMonth
 
 @login_required
 def home(request):
+    # current_date = date.today()
+
+    # entries = Entry.objects.filter(user=request.user, date__month=current_date.month, date__year=current_date.year)
+
     current_date = date.today()
 
-    entries = Entry.objects.filter(user=request.user, date__month=current_date.month, date__year=current_date.year)
+    selected_month = request.GET.get('month')
+
+    if selected_month:
+        year, month = map(int, selected_month.split('-'))
+        entries = Entry.objects.filter(user=request.user, date__year=year, date__month=month)
+    else:
+        entries = Entry.objects.filter(user=request.user, date__year=current_date.year, date__month=current_date.month)
+
+    total_income = Sum('amount', filter=Q(type='income'))
+    total_expenses = Sum('amount', filter=Q(type='expense'))
 
     total_income = entries.filter(type='income').aggregate(Sum('amount'))['amount__sum'] or 0
     total_expenses = entries.filter(type='expense').aggregate(Sum('amount'))['amount__sum'] or 0
     balance = total_income - total_expenses
+    
+    monthly_summary = Entry.objects.filter(user=request.user) \
+        .annotate(month=TruncMonth('date')) \
+        .values('month') \
+        .annotate(
+            total_income=Sum('amount', filter=Q(type='income')),
+            total_expenses=Sum('amount', filter=Q(type='expense'))
+        ).order_by('month')
+
+
 
     expenses_by_category = entries.filter(type='expense').values('category__name').annotate(total=Sum('amount'))
 
@@ -37,11 +63,17 @@ def home(request):
         'balance': balance,
     }
 
-    return render(request, 'home.html', {
-        'month_summary': month_summary,
-        'entries': entries,
-        'pie_chart_data': json.dumps(pie_chart_data)  
-    })
+    return render(
+        request, 
+        'home.html', 
+        {
+            'today': date.today(),
+            'month_summary': month_summary,
+            'entries': entries,
+            'pie_chart_data': json.dumps(pie_chart_data),
+            'monthly_summary': list(monthly_summary)
+        }
+    )
 
 def register(request):
     if request.method == 'POST':
