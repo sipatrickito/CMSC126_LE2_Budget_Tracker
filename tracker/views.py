@@ -1,38 +1,33 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from .forms import UserRegisterForm, EntryForm
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from .models import Entry, Category
-from django.db.models import Sum
-from datetime import date
-import json 
-from . import models
-from django.db.models import Q
+from django.db.models import Sum, Q
 from django.db.models.functions import TruncMonth
+from django.utils.dateparse import parse_date
+from datetime import date, datetime
+import json
+
+from .models import Entry, Category, Budget
+from .forms import UserRegisterForm, EntryForm, BudgetForm
+
 
 @login_required
 def home(request):
-    # current_date = date.today()
-
-    # entries = Entry.objects.filter(user=request.user, date__month=current_date.month, date__year=current_date.year)
-
     current_date = date.today()
-
     selected_month = request.GET.get('month')
 
     if selected_month:
         year, month = map(int, selected_month.split('-'))
-        entries = Entry.objects.filter(user=request.user, date__year=year, date__month=month)
     else:
-        entries = Entry.objects.filter(user=request.user, date__year=current_date.year, date__month=current_date.month)
+        year = current_date.year
+        month = current_date.month
 
-    total_income = Sum('amount', filter=Q(type='income'))
-    total_expenses = Sum('amount', filter=Q(type='expense'))
+    entries = Entry.objects.filter(user=request.user, date__year=year, date__month=month)
 
     total_income = entries.filter(type='income').aggregate(Sum('amount'))['amount__sum'] or 0
     total_expenses = entries.filter(type='expense').aggregate(Sum('amount'))['amount__sum'] or 0
     balance = total_income - total_expenses
-    
+
     monthly_summary = Entry.objects.filter(user=request.user) \
         .annotate(month=TruncMonth('date')) \
         .values('month') \
@@ -41,15 +36,18 @@ def home(request):
             total_expenses=Sum('amount', filter=Q(type='expense'))
         ).order_by('month')
 
-
-
-    expenses_by_category = entries.filter(type='expense').values('category__name').annotate(total=Sum('amount'))
+    expenses_by_category = entries.filter(type='expense').values('category__name', 'category').annotate(total=Sum('amount'))
 
     category_expenses = []
+    category_totals = []
     for expense in expenses_by_category:
         category_expenses.append({
             'name': expense['category__name'],
-            'total': float(expense['total'])  
+            'total': float(expense['total'])
+        })
+        category_totals.append({
+            'category': expense['category'],
+            'total_spent': expense['total']
         })
 
     pie_chart_data = {
@@ -57,23 +55,38 @@ def home(request):
         'data': [expense['total'] for expense in category_expenses],
     }
 
-    month_summary = {
-        'total_income': total_income,
-        'total_expenses': total_expenses,
-        'balance': balance,
+    budgets = Budget.objects.filter(user=request.user, month=month, year=year).select_related('category')
+
+    category_spending = {cat['category']: cat['total'] for cat in expenses_by_category}
+
+    budget_warnings = {}
+    for budget in budgets:
+        spent = category_spending.get(budget.category.id, 0)
+        over = spent > budget.amount
+        budget_warnings[budget.category.id] = {
+            'category_name': budget.category.name,
+            'budget': budget.amount,
+            'spent': spent,
+            'over': over
+        }
+
+    context = {
+        'today': current_date,
+        'month_summary': {
+            'total_income': total_income,
+            'total_expenses': total_expenses,
+            'balance': balance,
+        },
+        'entries': entries,
+        'pie_chart_data': json.dumps(pie_chart_data),
+        'monthly_summary': list(monthly_summary),
+        'budget_warnings': budget_warnings,
+        'selected_month': month,
+        'selected_year': year,
     }
 
-    return render(
-        request, 
-        'home.html', 
-        {
-            'today': date.today(),
-            'month_summary': month_summary,
-            'entries': entries,
-            'pie_chart_data': json.dumps(pie_chart_data),
-            'monthly_summary': list(monthly_summary)
-        }
-    )
+    return render(request, 'home.html', context)
+
 
 def register(request):
     if request.method == 'POST':
@@ -85,6 +98,7 @@ def register(request):
     else:
         form = UserRegisterForm()
     return render(request, 'register.html', {'form': form})
+
 
 @login_required
 def add_entry(request):
@@ -100,6 +114,7 @@ def add_entry(request):
         form = EntryForm()
     return render(request, 'add_entry.html', {'form': form})
 
+
 @login_required
 def edit_entry(request, entry_id):
     entry = get_object_or_404(Entry, id=entry_id, user=request.user)
@@ -113,6 +128,7 @@ def edit_entry(request, entry_id):
         form = EntryForm(instance=entry)
     return render(request, 'edit_entry.html', {'form': form})
 
+
 @login_required
 def delete_entry(request, entry_id):
     entry = get_object_or_404(Entry, id=entry_id, user=request.user)
@@ -121,3 +137,36 @@ def delete_entry(request, entry_id):
         messages.success(request, 'Entry deleted successfully!')
         return redirect('home')
     return render(request, 'confirm_delete.html', {'entry': entry})
+
+
+@login_required
+def set_budget(request):
+    if request.method == 'POST':
+        form = BudgetForm(request.POST)
+        if form.is_valid():
+            budget = form.save(commit=False)
+            budget.user = request.user
+
+            month_date = form.cleaned_data['month_input']
+            budget.month = month_date.month
+            budget.year = month_date.year
+
+            existing = Budget.objects.filter(
+                user=request.user,
+                month=budget.month,
+                year=budget.year,
+                category=budget.category
+            ).first()
+
+            if existing:
+                existing.amount = budget.amount
+                existing.save()
+            else:
+                budget.save()
+
+            messages.success(request, 'Budget saved successfully.')
+            return redirect('home')
+    else:
+        form = BudgetForm()
+
+    return render(request, 'set_budget.html', {'form': form})

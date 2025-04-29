@@ -29,3 +29,18 @@ class Entry(models.Model):
 
     class Meta:
         verbose_name_plural = "Entries"
+
+class Budget(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    category = models.ForeignKey('Category', null=True, blank=True, on_delete=models.CASCADE)
+    month = models.IntegerField()
+    year = models.IntegerField()
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+
+    class Meta:
+        unique_together = ('user', 'category', 'month', 'year')
+
+    def __str__(self):
+        if self.category:
+            return f"{self.user.username} - {self.category.name} ({self.month}/{self.year})"
+        return f"{self.user.username} - Overall Budget ({self.month}/{self.year})"
