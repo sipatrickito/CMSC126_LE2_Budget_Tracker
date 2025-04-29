@@ -3,15 +3,7 @@ This is a personal finance tracker built with Django.
 You can add income and expenses, visualize summaries with pie and bar charts, and filter entries by month!
 
 🚀 Getting Started
-Clone the repository
-
-git clone https://github.com/yourusername/your-repo-name.git
-
-cd your-repo-name
-
-Set up a virtual environment
-
-python -m venv venv
+Clone the repository and setup a venv.
 
 Activate it:
 
@@ -58,6 +50,10 @@ Bar chart for monthly income vs expenses
 Filter entries by month
 
 User authentication (login/logout/register)
+
+Setting budget for expense categories for each month.
+
+Saving into a CSV file.
 
 
 🛠 Built With
