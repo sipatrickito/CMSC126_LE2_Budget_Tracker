@@ -1,0 +1,76 @@
+{% extends 'layout.html'%}
+
+{% block nav_content %}
+
+<li class="nav-item">
+  <a class="nav-link" href="{% url 'login_tracker_user' %}">Login</a>
+</li>
+
+{% endblock %}
+
+{% block content %}
+
+<main class="container mt-3 col-md-6">
+  <h2>Register new account</h2>
+  <form
+    id="tracker-register-form" method="post"
+    class="needs-validation {% if form.errors or form.cleaned_data %}was-validated{% endif %}"
+    novalidate>
+    {% csrf_token %}
+
+    {% for field in form %}
+    <label for="id_{{ field.name }}" class="form-label">{{ field.label }}</label>
+    <div class="input-group has-validation mb-3">
+      {{ field }}
+      <div id="{{ field.name }}-invalid-feedback" class="invalid-feedback">
+        <ul class="errorlist">
+          {% for error in field.errors %}
+          <li>{{ error }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+    {% endfor %}
+
+    <button
+      id="tracker-register-form-submit" type="submit"
+      class="btn btn-primary w-100"
+      {% if form.errors or not form.cleaned_data %}disabled{% endif %}>
+      Go!
+    </button>
+  </form>
+</main>
+
+<script>
+  "use strict";
+
+  const form = document.querySelector("#tracker-register-form");
+  form.addEventListener("input", () => {
+    if (form.checkValidity()) {
+      document.querySelector("#tracker-register-form-submit").disabled = false;
+    }
+    form.classList.add("was-validated");
+  });
+
+  const password1 = form.querySelector("#id_password1");
+  const password2 = form.querySelector("#id_password2");
+
+  function onPasswordMatch() {
+    const errorlist = form.querySelector("#password2-invalid-feedback .errorlist");
+    errorlist.replaceChildren();
+    if (password2.value !== password1.value) {
+      const mismatch_message = "{{ form.error_messages.password_mismatch }}"
+      const mismatch_child = document.createElement("li");
+      password2.setCustomValidity(mismatch_message);
+      errorlist.append(mismatch_child);
+      mismatch_child.textContent = mismatch_message;
+    } else {
+      password2.setCustomValidity("");
+    }
+  }
+
+  password1.addEventListener("input", onPasswordMatch);
+  password2.addEventListener("input", onPasswordMatch);
+</script>
+
+{% endblock %}
