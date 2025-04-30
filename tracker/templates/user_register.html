@@ -20,7 +20,7 @@
     <div class="input-group has-validation mb-3">
       {{ field }}
       <div id="{{ field.name }}-invalid-feedback" class="invalid-feedback">
-        <ul class="errorlist">
+        <ul class="errorlist mb-0">
           {% for error in field.errors %}
           <li>{{ error }}</li>
           {% endfor %}
@@ -42,26 +42,22 @@
   "use strict";
 
   const form = document.querySelector("#tracker-register-form");
-  form.addEventListener("input", () => {
-    if (form.checkValidity()) {
-      document.querySelector("#tracker-register-form-submit").disabled = false;
-    }
-    form.classList.add("was-validated");
-  });
 
   const username = form.querySelector("#id_username");
   username.addEventListener("input", async () => {
     const errorlist = username.nextElementSibling.querySelector(".errorlist");
     errorlist.replaceChildren();
-    const name = await fetch(
-      "{% url 'register_tracker_user' %}?username=" + username.value
-    )
-    .then(resp => resp.json());
-    if (name.taken) {
-      username.setCustomValidity(name.message);
-      appendError(name.message, errorlist);
-    } else {
-      username.setCustomValidity("");
+    if (username.value) {
+      const name = await fetch(
+        "{% url 'register_tracker_user' %}?username=" + username.value
+      )
+      .then(resp => resp.json());
+      if (name.taken) {
+        username.setCustomValidity(name.message);
+        appendError(name.message, errorlist);
+      } else {
+        username.setCustomValidity("");
+      }
     }
   });
 
@@ -70,6 +66,13 @@
   password1.addEventListener("input", onPasswordMismatch);
   password2.addEventListener("input", onPasswordMismatch);
 
+  form.addEventListener("input", () => {
+    if (form.checkValidity()) {
+      document.querySelector("#tracker-register-form-submit").disabled = false;
+    }
+    form.classList.add("was-validated");
+  });
+
   function appendError(message, errorlist) {
     const child = document.createElement("li");
     child.textContent = message;
@@ -77,7 +80,7 @@
   }
 
   function onPasswordMismatch() {
-    const errorlist = form.querySelector("#password2-invalid-feedback .errorlist");
+    const errorlist = password2.nextElementSibling.querySelector(".errorlist");
     errorlist.replaceChildren();
     if (password2.value !== password1.value) {
       const mismatchMessage = "{{ form.error_messages.password_mismatch }}"
