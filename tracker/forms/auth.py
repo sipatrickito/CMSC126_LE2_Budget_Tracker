@@ -10,7 +10,9 @@ class TrackerUserCreateForm(BootstrapFormMixin, UserCreationForm):
 
     def full_clean(self):
         super().full_clean()
-        print(self.errors)
+        for name, field in self.fields.items():
+            if name in self.errors:
+                self.invalid_field(field)
 
 
 class TrackerUserLoginForm(BootstrapFormMixin, AuthenticationForm):

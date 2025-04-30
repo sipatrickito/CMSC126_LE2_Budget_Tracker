@@ -12,10 +12,7 @@
 
 <main class="container mt-3 col-md-6">
   <h2>Register new account</h2>
-  <form
-    id="tracker-register-form" method="post"
-    class="needs-validation {% if form.errors or form.cleaned_data %}was-validated{% endif %}"
-    novalidate>
+  <form id="tracker-register-form" method="post" class="needs-validation" novalidate>
     {% csrf_token %}
 
     {% for field in form %}
@@ -52,25 +49,44 @@
     form.classList.add("was-validated");
   });
 
+  const username = form.querySelector("#id_username");
+  username.addEventListener("input", async () => {
+    const errorlist = username.nextElementSibling.querySelector(".errorlist");
+    errorlist.replaceChildren();
+    const name = await fetch(
+      "{% url 'register_tracker_user' %}?username=" + username.value
+    )
+    .then(resp => resp.json());
+    if (name.taken) {
+      username.setCustomValidity(name.message);
+      appendError(name.message, errorlist);
+    } else {
+      username.setCustomValidity("");
+    }
+  });
+
   const password1 = form.querySelector("#id_password1");
   const password2 = form.querySelector("#id_password2");
+  password1.addEventListener("input", onPasswordMismatch);
+  password2.addEventListener("input", onPasswordMismatch);
 
-  function onPasswordMatch() {
+  function appendError(message, errorlist) {
+    const child = document.createElement("li");
+    child.textContent = message;
+    errorlist.append(child);
+  }
+
+  function onPasswordMismatch() {
     const errorlist = form.querySelector("#password2-invalid-feedback .errorlist");
     errorlist.replaceChildren();
     if (password2.value !== password1.value) {
-      const mismatch_message = "{{ form.error_messages.password_mismatch }}"
-      const mismatch_child = document.createElement("li");
-      password2.setCustomValidity(mismatch_message);
-      errorlist.append(mismatch_child);
-      mismatch_child.textContent = mismatch_message;
+      const mismatchMessage = "{{ form.error_messages.password_mismatch }}"
+      password2.setCustomValidity(mismatchMessage);
+      appendError(mismatchMessage, errorlist);
     } else {
       password2.setCustomValidity("");
     }
   }
-
-  password1.addEventListener("input", onPasswordMatch);
-  password2.addEventListener("input", onPasswordMatch);
 </script>
 
 {% endblock %}

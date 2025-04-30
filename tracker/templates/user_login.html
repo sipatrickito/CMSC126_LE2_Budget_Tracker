@@ -44,13 +44,15 @@
 </main>
 
 <script>
+  "use strict";
+
   const form = document.querySelector("#tracker-login-form");
   form.addEventListener("input", () => {
-    form.classList.add("was-validated");
     if (form.checkValidity()) {
       document.querySelector("#tracker-login-form-submit").disabled = false;
       document.querySelector("#tracker-login-form-error")?.remove();
     }
+    form.classList.add("was-validated");
   });
 </script>
 {% endblock %}
