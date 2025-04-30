@@ -6,7 +6,9 @@ from django.db.models.functions import TruncMonth
 from django.utils.dateparse import parse_date
 from datetime import date, datetime
 import json
-
+import csv
+from django.http import HttpResponse
+from .models import Entry
 from .models import Entry, Category, Budget
 from .forms import UserRegisterForm, EntryForm, BudgetForm
 
@@ -70,6 +72,7 @@ def home(request):
             'over': over
         }
 
+    categories = Category.objects.all()
     context = {
         'today': current_date,
         'month_summary': {
@@ -83,6 +86,7 @@ def home(request):
         'budget_warnings': budget_warnings,
         'selected_month': month,
         'selected_year': year,
+        'categories': categories,
     }
 
     return render(request, 'home.html', context)
@@ -170,3 +174,30 @@ def set_budget(request):
         form = BudgetForm()
 
     return render(request, 'set_budget.html', {'form': form})
+
+@login_required
+def export_csv(request):
+    # Optional filters
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    category = request.GET.get('category')
+
+    entries = Entry.objects.filter(user=request.user)
+
+    if start_date:
+        entries = entries.filter(date__gte=start_date)
+    if end_date:
+        entries = entries.filter(date__lte=end_date)
+    if category:
+        entries = entries.filter(category_id=category)
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="budget_entries.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow(['Date', 'Title', 'Type', 'Category', 'Amount'])
+
+    for entry in entries:
+        writer.writerow([entry.date, entry.title, entry.get_type_display(), entry.category.name, entry.amount])
+
+    return response

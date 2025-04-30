@@ -88,9 +88,39 @@
     {% endif %}
 </div>
 
+
+<!-- CSV Export -->
+
+<div class="mt-3 p-4 border rounded shadow-sm bg-light-subtle">
+    <h4 class="mb-3">📤 Export Your Data</h4>
+    <p class="text-muted mb-4" style="font-size: 0.95rem;">
+        Need a backup or want to analyze your finances in a spreadsheet? Export your income and expenses to a CSV file easily. 
+        You can also filter by month and category for more precise reports.
+    </p>
+
+    <form method="get" action="{% url 'export_csv' %}" class="row gy-2 gx-3 align-items-center">
+        <div class="col-auto">
+            <label class="form-label mb-0" for="export_month">Month</label>
+            <input type="month" id="export_month" name="month" class="form-control" value="{{ request.GET.month|default:today|date:'Y-m' }}">
+        </div>
+        <div class="col-auto">
+            <label class="form-label mb-0" for="category">Category</label>
+            <select name="category" id="category" class="form-select">
+                <option value="">All</option>
+                {% for category in categories %}
+                    <option value="{{ category.id }}">{{ category.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-auto mt-4">
+            <button type="submit" class="btn btn-outline-primary">Download CSV</button>
+        </div>
+    </form>
+</div>
+
 <!-- Budgeting -->
-<div class="p-4 rounded-3 mt-5" style="background-color: #f8fff4; border: 1px solid #e0f2e9;">
-    <h4 class="mb-3" style="color: #010f06;">Budget Overview</h4>
+<div class="p-4 rounded-3 mt-3" style="background-color: #f6ffef; border: 1px solid #e0f2e9;">
+    <h4 class="mb-3" style="color: #010f06;">🧾 Budget Overview</h4>
     <p class="mb-3 fs-5" style="color: #000000;">Wait! Are your expenses unknowingly getting too high?  
         <a href="{% url 'set_budget' %}" class="btn btn-primary">Set a Budget!</a></p>
 
@@ -131,7 +161,7 @@
 
 <!-- Section Introduction -->
 <div class="p-3 mb-4 rounded" style="background-color: #fff2f4;">
-    <h4 class="fw-semibold">Track Where Your Money Goes</h4>
+    <h4 class="fw-semibold">📊 Track Where Your Money Goes</h4>
     <p class="mb-1 text-muted" style="max-width: 700px;">
         Curious about your spending habits? See how your expenses are distributed across categories 
         and compare your monthly income vs expenses to better understand your financial trends.
