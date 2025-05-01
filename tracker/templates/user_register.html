@@ -59,6 +59,7 @@
         username.setCustomValidity("");
       }
     }
+    toggleSubmitButton();
   });
 
   const password1 = form.querySelector("#id_password1");
@@ -66,12 +67,11 @@
   password1.addEventListener("input", onPasswordMismatch);
   password2.addEventListener("input", onPasswordMismatch);
 
-  form.addEventListener("input", () => {
-    if (form.checkValidity()) {
-      document.querySelector("#tracker-register-form-submit").disabled = false;
-    }
+  function toggleSubmitButton() {
+    const submit = document.querySelector("#tracker-register-form-submit");
+    submit.disabled = !form.checkValidity();
     form.classList.add("was-validated");
-  });
+  }
 
   function appendError(message, errorlist) {
     const child = document.createElement("li");
@@ -89,6 +89,7 @@
     } else {
       password2.setCustomValidity("");
     }
+    toggleSubmitButton();
   }
 </script>
 
