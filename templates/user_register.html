@@ -1,0 +1,88 @@
+{% extends 'base.html'%}
+
+{% block content %}
+
+<main class="container mt-3 col-md-6">
+  <h2>Register new account</h2>
+  <form id="tracker-register-form" method="post" class="needs-validation" novalidate>
+    {% csrf_token %}
+
+    {% for field in form %}
+    <label for="id_{{ field.name }}" class="form-label">{{ field.label }}</label>
+    <div class="input-group has-validation mb-3">
+      {{ field }}
+      <div id="{{ field.name }}-invalid-feedback" class="invalid-feedback">
+        <ul class="errorlist mb-0">
+          {% for error in field.errors %}
+          <li>{{ error }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+    {% endfor %}
+
+    <button
+      id="tracker-register-form-submit" type="submit"
+      class="btn btn-primary w-100"
+      {% if form.errors or not form.cleaned_data %}disabled{% endif %}>
+      Go!
+    </button>
+  </form>
+</main>
+
+<script>
+  "use strict";
+
+  const form = document.querySelector("#tracker-register-form");
+
+  const username = form.querySelector("#id_username");
+  username.addEventListener("input", async () => {
+    const errorlist = username.nextElementSibling.querySelector(".errorlist");
+    errorlist.replaceChildren();
+    if (username.value) {
+      const name = await fetch(
+        "{% url 'register' %}?username=" + username.value
+      )
+      .then(resp => resp.json());
+      if (name.taken) {
+        username.setCustomValidity(name.message);
+        appendError(name.message, errorlist);
+      } else {
+        username.setCustomValidity("");
+      }
+    }
+    toggleSubmitButton();
+  });
+
+  const password1 = form.querySelector("#id_password1");
+  const password2 = form.querySelector("#id_password2");
+  password1.addEventListener("input", onPasswordMismatch);
+  password2.addEventListener("input", onPasswordMismatch);
+
+  function toggleSubmitButton() {
+    const submit = document.querySelector("#tracker-register-form-submit");
+    submit.disabled = !form.checkValidity();
+    form.classList.add("was-validated");
+  }
+
+  function appendError(message, errorlist) {
+    const child = document.createElement("li");
+    child.textContent = message;
+    errorlist.append(child);
+  }
+
+  function onPasswordMismatch() {
+    const errorlist = password2.nextElementSibling.querySelector(".errorlist");
+    errorlist.replaceChildren();
+    if (password2.value !== password1.value) {
+      const mismatchMessage = "{{ form.error_messages.password_mismatch }}"
+      password2.setCustomValidity(mismatchMessage);
+      appendError(mismatchMessage, errorlist);
+    } else {
+      password2.setCustomValidity("");
+    }
+    toggleSubmitButton();
+  }
+</script>
+
+{% endblock %}
