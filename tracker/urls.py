@@ -1,26 +1,29 @@
-from django.contrib import auth as dj_auth
+from django.contrib.auth import views as auth_views
 from django.urls import path
 
-from .forms.auth import TrackerUserLoginForm
-from .views import auth as tr_auth
-
-# from .views import track
+from . import views
+from .forms import TrackerUserLoginForm
 
 urlpatterns = [
-    # -------------------- Auth paths --------------------
+    path("set-budget/", views.set_budget, name="set_budget"),
+    path("", views.home, name="home"),
+    path("register/", views.TrackerUserCreateView.as_view(), name="register"),
     path(
-        "register/",
-        tr_auth.TrackerUserCreateView.as_view(),
-        name="register_tracker_user",
-    ),
-    path(
-        "",
-        dj_auth.views.LoginView.as_view(
+        "login/",
+        auth_views.LoginView.as_view(
             template_name="user_login.html",
             authentication_form=TrackerUserLoginForm,
         ),
-        name="login_tracker_user",
+        name="login",
     ),
-    path("logout/", dj_auth.views.LogoutView.as_view(), name="logout_tracker_user"),
-    # -------------------- Tracker paths --------------------
+    path(
+        "logout/",
+        auth_views.LogoutView.as_view(template_name="logout.html"),
+        name="logout",
+    ),
+    path("add/", views.add_entry, name="add_entry"),
+    path("edit/<int:entry_id>/", views.edit_entry, name="edit_entry"),
+    path("delete/<int:entry_id>/", views.delete_entry, name="delete_entry"),
+    path("delete/<int:entry_id>/", views.delete_entry, name="delete_entry"),
+    path("export/", views.export_csv, name="export_csv"),
 ]

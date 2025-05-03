@@ -1,12 +1,4 @@
-{% extends 'layout.html'%}
-
-{% block nav_content %}
-
-<li class="nav-item">
-  <a class="nav-link" href="{% url 'login_tracker_user' %}">Login</a>
-</li>
-
-{% endblock %}
+{% extends 'base.html'%}
 
 {% block content %}
 
@@ -49,7 +41,7 @@
     errorlist.replaceChildren();
     if (username.value) {
       const name = await fetch(
-        "{% url 'register_tracker_user' %}?username=" + username.value
+        "{% url 'register' %}?username=" + username.value
       )
       .then(resp => resp.json());
       if (name.taken) {

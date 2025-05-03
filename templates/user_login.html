@@ -1,12 +1,4 @@
-{% extends 'layout.html' %}
-
-{% block nav_content %}
-
-<li class="nav-item">
-  <a class="nav-link" href="{% url 'register_tracker_user' %}">Register</a>
-</li>
-
-{% endblock %}
+{% extends 'base.html' %}
 
 {% block content %}
 
@@ -38,7 +30,7 @@
       Go!
     </button>
     <p class="mt-3 text-center">
-        Don't have an account? Register <a href="{% url 'register_tracker_user' %}">here</a>
+        Don't have an account? Register <a href="{% url 'register' %}">here</a>
     </p>
   </form>
 </main>

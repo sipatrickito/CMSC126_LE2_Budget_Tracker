@@ -1,77 +1,46 @@
-from django.contrib.auth.models import User
-from django.core.exceptions import ValidationError
-from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-from django.utils import timezone
-from django.utils.translation import gettext as g
+from django.contrib.auth.models import User
 
+class Category(models.Model):
+    name = models.CharField(max_length=100)
 
-class WithUpdateInfo(models.Model):
-    date_added = models.DateTimeField(auto_now_add=True)
-    date_updated = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        abstract = True
-
-
-class BudgetCategory(WithUpdateInfo):
-    owner = models.ForeignKey(User, models.CASCADE)
-    name = models.CharField(max_length=255)
-    description = models.TextField(null=True, blank=True)
+    def __str__(self):
+        return self.name
 
     class Meta:
         verbose_name_plural = "Categories"
-        unique_together = ("owner", "name")
 
-    def __str__(self):
-        return self.name
-
-
-class BudgetEntry(WithUpdateInfo):
-    class EntryType(models.TextChoices):
-        INCOME = "inc", g("income")
-        EXPENSE = "exp", g("expense")
-
-    owner = models.ForeignKey(User, models.CASCADE)
-    name = models.TextField()
-    category = models.ForeignKey(BudgetCategory, models.SET_NULL, null=True, blank=True)
-    entry_type = models.CharField(
-        max_length=3, choices=EntryType, default=EntryType.INCOME
+class Entry(models.Model):
+    ENTRY_TYPE_CHOICES = (
+        ('income', 'Income'),
+        ('expense', 'Expense'),
     )
-    entry_date = models.DateTimeField(auto_now_add=True)
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    title = models.CharField(max_length=255)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
-    description = models.TextField(null=True, blank=True)
-
-    class Meta:
-        verbose_name_plural = "Budget Entries"
-
-    def __str__(self):
-        return self.name
-
-
-def must_be_current_month(month):
-    if month < timezone.now().month:
-        raise ValidationError("Must be the current month.")
-
-
-def must_be_current_year(year):
-    if year < timezone.now().year:
-        raise ValidationError("Must be the current year.")
-
-
-class BudgetSetting(WithUpdateInfo):
-    owner = models.ForeignKey(User, models.CASCADE)
-    category = models.ForeignKey(BudgetCategory, models.CASCADE)
-    amount_limit = models.DecimalField(max_digits=10, decimal_places=2)
-    month = models.PositiveSmallIntegerField(
-        validators=[MinValueValidator(1), MaxValueValidator(12), must_be_current_month]
-    )
-    year = models.PositiveSmallIntegerField(
-        validators=[MinValueValidator(1970), must_be_current_year]
-    )
-
-    class Meta:
-        unique_together = ("owner", "category", "month", "year")
+    date = models.DateField()
+    type = models.CharField(max_length=7, choices=ENTRY_TYPE_CHOICES)
+    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True)
+    notes = models.TextField(blank=True, null=True)
 
     def __str__(self):
-        return f"{self.category} {self.month}-{self.year}"
+        return f"{self.title} - {self.type} - {self.amount}"
+
+    class Meta:
+        verbose_name_plural = "Entries"
+
+class Budget(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    category = models.ForeignKey('Category', null=True, blank=True, on_delete=models.CASCADE)
+    month = models.IntegerField()
+    year = models.IntegerField()
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+
+    class Meta:
+        unique_together = ('user', 'category', 'month', 'year')
+
+    def __str__(self):
+        if self.category:
+            return f"{self.user.username} - {self.category.name} ({self.month}/{self.year})"
+        return f"{self.user.username} - Overall Budget ({self.month}/{self.year})"

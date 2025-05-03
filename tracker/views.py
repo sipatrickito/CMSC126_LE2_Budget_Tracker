@@ -5,12 +5,12 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q, Sum
 from django.db.models.functions import TruncMonth
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
-from django.views.decorators.http import require_http_methods
+from django.views.generic import View
 
-from .forms import BudgetForm, EntryForm, UserRegisterForm
+from .forms import BudgetForm, EntryForm, TrackerUserCreateForm
 from .models import Budget, Category, Entry
 
 
@@ -106,17 +106,27 @@ def home(request):
     return render(request, "home.html", context)
 
 
-@require_http_methods(["GET", "POST"])
-def register(request):
-    if request.method == "POST":
-        form = UserRegisterForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect("login")
-        else:
-            return render(request, "register.html", {"form": form}, status=400)
+class TrackerUserCreateView(View):
+    def get(self, request, *args, **kwargs):
+        if request.GET:
+            form = TrackerUserCreateForm(request.GET)
+            taken = "username" in form.errors
+            return JsonResponse(
+                {
+                    "taken": taken,
+                    "message": form.errors["username"][0] if taken else None,
+                }
+            )
 
-    return render(request, "register.html", {"form": UserRegisterForm()})
+        return render(request, "user_register.html", {"form": TrackerUserCreateForm()})
+
+    def post(self, request, *args, **kwargs):
+        form = TrackerUserCreateForm(request.POST)
+        if not form.is_valid():
+            return render(request, "user_register.html", {"form": form}, status=400)
+        form.save()
+
+        return redirect("login_tracker_user")
 
 
 @login_required
