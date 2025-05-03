@@ -126,7 +126,7 @@ class TrackerUserCreateView(View):
             return render(request, "user_register.html", {"form": form}, status=400)
         form.save()
 
-        return redirect("login_tracker_user")
+        return redirect("login")
 
 
 @login_required
